@@ -15,6 +15,7 @@
 mod util;
 
 use std::convert::TryInto;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{mem, sync::Arc, thread, time::Duration};
 
 use pretty_assertions::assert_eq;
@@ -1568,4 +1569,32 @@ fn test_atomic_flush_cfs() {
             Some("v21".as_bytes().to_vec())
         );
     }
+}
+
+#[derive(Default)]
+struct EvilAsRef {
+    toggle: AtomicUsize,
+}
+
+impl AsRef<[u8]> for EvilAsRef {
+    fn as_ref(&self) -> &[u8] {
+        if self.toggle.fetch_xor(1, Ordering::Relaxed) == 0 {
+            b""
+        } else {
+            b"lorem ipsum dolor sit amet"
+        }
+    }
+}
+
+#[test]
+fn evil_as_ref() {
+    let path = DBPath::new("_rust_rocksdb_evil_as_ref");
+    let db = DB::open_default(&path).unwrap();
+
+    let evil = EvilAsRef {
+        toggle: AtomicUsize::new(0),
+    };
+
+    let result = &db.multi_get([evil])[0];
+    assert!(result.as_ref().unwrap().is_none());
 }

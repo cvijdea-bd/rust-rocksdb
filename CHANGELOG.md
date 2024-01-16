@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+* Expose blob cache options
+* Expose LRU cache options
 
 ## 0.22.0 (2024-02-13)
 

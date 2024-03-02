@@ -214,7 +214,12 @@ fn build_rocksdb() {
     config.define("ROCKSDB_SUPPORT_THREAD_LOCAL", None);
 
     if cfg!(feature = "jemalloc") {
-        config.define("WITH_JEMALLOC", "ON");
+        config.define("ROCKSDB_JEMALLOC", Some("1"));
+        config.define("JEMALLOC_NO_DEMANGLE", Some("1"));
+
+        if let Some(jemalloc_root) = std::env::var_os("DEP_JEMALLOC_ROOT") {
+            config.include(Path::new(&jemalloc_root).join("include"));
+        }
     }
 
     #[cfg(feature = "io-uring")]

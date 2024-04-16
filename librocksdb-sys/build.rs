@@ -235,6 +235,9 @@ fn build_rocksdb() {
     }
 
     if target.contains("msvc") {
+        if cfg!(feature = "mt_static") {
+            config.static_crt(true);
+        }
         config.flag("-EHsc");
         config.flag("-std:c++17");
     } else {
@@ -250,7 +253,10 @@ fn build_rocksdb() {
         config.flag("-Wno-strict-aliasing");
         config.flag("-Wno-invalid-offsetof");
     }
-
+    if target.contains("riscv64gc") {
+        // link libatomic required to build for riscv64gc
+        println!("cargo:rustc-link-lib=atomic");
+    }
     for file in lib_sources {
         config.file(format!("rocksdb/{file}"));
     }
@@ -274,6 +280,9 @@ fn build_snappy() {
 
     if target.contains("msvc") {
         config.flag("-EHsc");
+        if cfg!(feature = "mt_static") {
+            config.static_crt(true);
+        }
     } else {
         // Snappy requires C++11.
         // See: https://github.com/google/snappy/blob/master/CMakeLists.txt#L32-L38
